@@ -38,3 +38,16 @@ rules emerge in code, but the no-timer rule for auto-enrol and the grounding
 rule for degree data are exactly the kind an agent breaks by reflex (a
 `setInterval` is the first thing it reaches for), so they are cheaper to state
 up front. Checked the deploy with a curl of the live URL, which returned 200.
+
+## 8b90c29 test: the plan contracts, a course added to a semester renders and persists
+
+Filled in the two `it.todo` tests with a contract stated at the top of the
+file: `data-term` and `data-course` hooks on the plan page, and form POSTs to
+`/api/plan` and `/api/plan/remove`. The obvious alternative was to match on
+visible text like "COMP4610", which would pass if the course showed up
+anywhere on the page, including the progress panel or the search box, so it
+would not prove the course landed in the right semester. The hooks tie the
+assertion to the semester without saying how the page is built. The courses
+used run in the semester they are placed in, so the tests do not depend on
+whether the planner accepts impossible entries. Not run: the suite needs the
+built server, which needs better-sqlite3.
