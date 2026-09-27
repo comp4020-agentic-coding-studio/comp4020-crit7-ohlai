@@ -36,7 +36,7 @@ const inPlan = units.completed + units.enrolled + units.planned;
     <div><dt><span class="key key-planned"></span>Planned</dt><dd>{units.planned}</dd></div>
     <div class="units-total"><dt>In the plan</dt><dd>{inPlan} of {units.total}</dd></div>
   </dl>
-  <details open>
+  <details open id="required-courses">
     <summary>Required courses</summary>
     {
       groups.map((g) => (
@@ -61,3 +61,11 @@ const inPlan = units.completed + units.enrolled + units.planned;
     }
   </details>
 </aside>
+
+<script>
+  // On a phone the panel sits above the plan, so the full list of required
+  // courses would push the plan a screen down. Start it closed there; with
+  // no JavaScript it simply stays open.
+  const details = document.getElementById("required-courses");
+  if (details && window.matchMedia("(max-width: 60rem)").matches) details.removeAttribute("open");
+</script>

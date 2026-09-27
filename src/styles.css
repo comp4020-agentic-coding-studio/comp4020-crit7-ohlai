@@ -777,4 +777,8 @@ main {
   .progress details:not([open]) summary {
     margin-bottom: 0;
   }
+
+  .site nav a {
+    padding: 0.35rem 0.5rem;
+  }
 }

@@ -67,3 +67,16 @@ against the P&C page. That run caught a bug: a half-done capstone option
 kept its claims, so COMP4500 counted as its own "further 4000-level" course.
 Fixed before the commit. Deployed, and the boot logs show migration 0001
 and the seed ran.
+
+## 1643549 feat: the degree plan page, with the missing-requirements check and progress panel
+
+Let the plan accept any real course in any future semester and flag what is
+wrong, instead of refusing bad entries. The obvious alternative was to
+validate on add (reject COMP4610 in Semester 2), which is what ISIS does for
+enrolment, but a plan is a draft, and a refusal hides the reason where a flag
+shows it next to the course. Enrolment, in the next step, is where refusal
+belongs. Checked by deploying and running spec/ against the live app through a
+scratch global setup that points `baseUrl` at fly.dev: 27 of 27 passed,
+including both plan contracts, the invariants and the README check. The
+persistence test's leftover entry was removed afterwards. Then screenshots at
+both viewports, which showed the phone problem fixed in the next commit.
