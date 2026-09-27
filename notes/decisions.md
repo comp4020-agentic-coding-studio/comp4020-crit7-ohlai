@@ -102,3 +102,15 @@ courses only, not planned ones, because ISIS knows nothing about a plan.
 Checked on the deploy by POSTing an enrolment for Semester 1 2027 before its
 window: it redirected with "Enrolment for Semester 1 2027 opens 30 Nov 2026,
 9:00 am."
+
+## bd16e15 feat: auto-enrol from the plan, processed on request, with a demo control
+
+Processed auto-enrol in middleware on every request, guarded by a processed
+stamp set in the same transaction plus the unique index. The obvious
+alternative was a `setInterval`, which the brief rules out because the
+machine stops when idle, or processing only on the enrolment page, which
+would mean a window opening while I sat on the plan page did nothing until
+I clicked across. Every request is the honest version of "when the window
+opens". The cost is one small indexed query per request. Checked with eight
+parallel requests in spec/auto-enrol.test.ts against the live app, and by
+running the demo for real on prod and reading the log.

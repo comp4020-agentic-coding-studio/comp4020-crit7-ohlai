@@ -65,7 +65,10 @@ const statusWord = { completed: "Completed", enrolled: "Enrolled", planned: "Pla
       {
         results.map((c) => {
           const mine = mineFor(c.code);
-          const plannableHere = future.filter((t) => !mine.some((e) => e.termId === t.id));
+          // A course already taken is done with, unless the rules repeat it.
+          const taken = !c.repeatable && mine.some((e) => e.status !== "planned");
+          const plannableHere = taken ? [] : future.filter((t) => !mine.some((e) => e.termId === t.id));
+          const enrollable = taken ? [] : open.filter((t) => !mine.some((e) => e.termId === t.id && e.status === "enrolled"));
           return (
             <li class="course" data-course-result={c.code}>
               <h2>
@@ -85,13 +88,13 @@ const statusWord = { completed: "Completed", enrolled: "Enrolled", planned: "Pla
                 </p>
               )}
               <div class="course-actions">
-                {open.length > 0 && (
+                {enrollable.length > 0 && (
                   <form method="post" action="/api/enrol">
                     <input type="hidden" name="course" value={c.code} />
                     <input type="hidden" name="back" value={back} />
                     <label for={`enrol-${c.code}`}>Enrol for</label>
                     <select id={`enrol-${c.code}`} name="term">
-                      {open.map((t) => (
+                      {enrollable.map((t) => (
                         <option value={t.id}>{termLabel(t)}</option>
                       ))}
                     </select>

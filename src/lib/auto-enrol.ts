@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, lte, gt } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, lte } from "drizzle-orm";
 import { db, STUDENT_ID } from "./db";
 import { canEnrol } from "./enrol";
 import { termLabel } from "./rules";
@@ -114,8 +114,8 @@ export function logFor(termId: string, studentId = STUDENT_ID) {
     .select()
     .from(enrolmentLog)
     .where(and(eq(enrolmentLog.studentId, studentId), eq(enrolmentLog.termId, termId)))
-    .orderBy(desc(enrolmentLog.id))
-    .limit(30)
+    .orderBy(asc(enrolmentLog.id))
+    .limit(60)
     .all();
 }
 
