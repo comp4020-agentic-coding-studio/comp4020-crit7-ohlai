@@ -1,5 +1,5 @@
 import { JSDOM } from "jsdom";
-import { describe, expect, inject, it } from "vitest";
+import { afterAll, describe, expect, inject, it } from "vitest";
 
 // Crit 7's published spec, turned into contracts. Five lines are published;
 // these are the ones a machine can hold. The other two are named at the
@@ -78,8 +78,15 @@ describe("spec: a slice of a real ANU system, wired end to end", () => {
 describe("spec: the core flow persists across a reload", () => {
   // Create the thing the app is for, fetch the page again from scratch, and
   // the thing is still there.
+  const entry = { term: "2028-S2", course: "COMP4650" };
+
+  // Run against a deployed app (SPEC_BASE_URL), the entry would otherwise
+  // stay in my real plan.
+  afterAll(async () => {
+    await post("/api/plan/remove", entry);
+  });
+
   it("a created plan entry survives a fresh page load", async () => {
-    const entry = { term: "2028-S2", course: "COMP4650" };
 
     const res = await post("/api/plan", entry);
     expect(res.status).toBe(303);

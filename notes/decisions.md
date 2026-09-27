@@ -114,3 +114,13 @@ I clicked across. Every request is the honest version of "when the window
 opens". The cost is one small indexed query per request. Checked with eight
 parallel requests in spec/auto-enrol.test.ts against the live app, and by
 running the demo for real on prod and reading the log.
+
+## 9160115 fix: no Enrol button on a course already taken, and the log in time order
+
+Hid the enrol and plan actions on courses already taken, instead of leaving
+them and letting enrolment refuse. The obvious alternative was to keep the
+buttons, since the refusal message is accurate, but a button that can only
+fail is noise on a page whose job is to make the next action obvious. Found
+by reading the step 7 screenshot as a stranger would, not by a test.
+Deployed, then checked that prod was back to its seeded state after the
+live test runs and the demo run.

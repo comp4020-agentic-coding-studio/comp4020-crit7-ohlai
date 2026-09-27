@@ -124,6 +124,16 @@ succeed before any of them mean anything.
   installation to use`, and nothing else in the repo is at fault. Fly builds
   the image remotely on Linux, so a deploy works whether or not the local build
   does.
+- **Half the local loop still works.** `pnpm install --frozen-lockfile
+  --ignore-scripts` installs everything but skips the better-sqlite3 build, and
+  then `pnpm typecheck`, `pnpm build` and `pnpm db:generate` all run here. Only
+  booting the built server fails, and with it `pnpm test`.
+- **`SPEC_BASE_URL` runs `spec/` against the deploy**, since the server cannot
+  boot here: `SPEC_BASE_URL=https://comp4020-crit7-ohlai.fly.dev pnpm exec
+  vitest run` in Git Bash. The flow tests write to the live database and clean
+  up after themselves (plan entries removed, the demo window put back,
+  auto-enrol off). A new flow test must do the same, or a live run leaves junk
+  in my real plan.
 - **`spec/routes.ts` is the list of pages the invariants visit.** A
   server-rendered app has no `dist/*.html` files to walk, so nothing discovers
   new pages for you. Add a page, add its route, or the invariants silently stop
