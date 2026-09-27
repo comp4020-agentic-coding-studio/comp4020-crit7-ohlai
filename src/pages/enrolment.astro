@@ -1,0 +1,187 @@
+---
+// Enrolment windows, what I am enrolled in, and "enrol me from my plan" for
+// each semester still to come. The demo control at the bottom is labelled as
+// one: it moves a window so auto-enrol can be shown working.
+import Base from "../layouts/Base.astro";
+import { autoEnrolFor, logFor } from "../lib/auto-enrol";
+import { windowState } from "../lib/enrol";
+import { formatWhen, loadPlan, termLabel } from "../lib/view";
+
+const plan = loadPlan();
+const { terms, entries, courses } = plan;
+const now = new Date();
+const settings = autoEnrolFor();
+
+// Semesters whose window has not closed yet: the ones enrolment can touch.
+const live = terms.filter((t) => windowState(t, now) !== "after");
+// The demo can only move windows whose real date is still to come, so it
+// can never touch my actual history.
+const demoable = terms.filter((t) => t.seededOpensAt > now.toISOString());
+const nextOpening = terms
+  .filter((t) => t.seededOpensAt > now.toISOString())
+  .sort((a, b) => a.seededOpensAt.localeCompare(b.seededOpensAt))[0];
+---
+
+<Base title="Enrolment" current="enrolment">
+  <h1>Enrolment</h1>
+  <p class="lede">
+    Turn on “enrol me from my plan” for a semester and, when its enrolment window opens, every
+    course planned for it is enrolled, as long as enrolment would allow it. Anything it cannot
+    enrol is listed with the reason.
+  </p>
+
+  {
+    live.map((t) => {
+      const state = windowState(t, now);
+      const enrolled = entries.filter((e) => e.termId === t.id && e.status === "enrolled");
+      const planned = entries.filter((e) => e.termId === t.id && e.status === "planned");
+      const auto = settings.get(t.id);
+      const log = logFor(t.id);
+      const units = enrolled.reduce((s, e) => s + (courses.get(e.code)?.units ?? 0), 0);
+      return (
+        <section class="panel window" id={`window-${t.id}`} data-window={t.id} aria-labelledby={`h-${t.id}`}>
+          <div class="window-head">
+            <h2 id={`h-${t.id}`}>{termLabel(t)}</h2>
+            <span class={`phase phase-${state === "open" ? "open" : "upcoming"}`}>
+              {state === "open" ? "Enrolment open" : "Not open yet"}
+            </span>
+          </div>
+          <dl>
+            <dt>Window opens</dt>
+            <dd>
+              {state === "before" ? (
+                <time datetime={t.enrolmentOpensAt} data-countdown={t.enrolmentOpensAt}>
+                  {formatWhen(t.enrolmentOpensAt)}
+                </time>
+              ) : (
+                formatWhen(t.enrolmentOpensAt)
+              )}
+            </dd>
+            <dt>Window closes</dt>
+            <dd>{formatWhen(t.enrolmentClosesAt)}</dd>
+            <dt>Enrolled</dt>
+            <dd>
+              {enrolled.length === 0 ? (
+                "Nothing yet"
+              ) : (
+                <>
+                  {units} units
+                  <ul class="enrolled-list">
+                    {enrolled.map((e) => (
+                      <li data-enrolled={e.code}>
+                        {e.code} {courses.get(e.code)?.title}{" "}
+                        {state === "open" && (
+                          <form method="post" action="/api/drop">
+                            <input type="hidden" name="term" value={t.id} />
+                            <input type="hidden" name="course" value={e.code} />
+                            <input type="hidden" name="back" value={`/enrolment/#window-${t.id}`} />
+                            <button class="link-button" aria-label={`Drop ${e.code}`}>
+                              Drop
+                            </button>
+                          </form>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </dd>
+            <dt>Planned, not enrolled</dt>
+            <dd>{planned.length === 0 ? "None" : planned.map((e) => e.code).join(", ")}</dd>
+          </dl>
+
+          <form class="toggle" method="post" action="/api/auto-enrol">
+            <input type="hidden" name="term" value={t.id} />
+            <input type="hidden" name="enabled" value={auto?.enabled ? "false" : "true"} />
+            <p class="auto-status" data-auto-enrol={auto?.enabled ? "on" : "off"}>
+              <strong>Enrol me from my plan: {auto?.enabled ? "on" : "off"}.</strong>{" "}
+              {auto?.enabled
+                ? auto.processedAt
+                  ? `Ran ${formatWhen(auto.processedAt)}.`
+                  : state === "open"
+                    ? "It runs on the next page load."
+                    : `It runs when the window opens, ${formatWhen(t.enrolmentOpensAt)}.`
+                : ""}
+            </p>
+            <button class={auto?.enabled ? "secondary" : ""}>
+              {auto?.enabled ? "Turn off" : "Turn on"}
+            </button>
+          </form>
+
+          {log.length > 0 && (
+            <>
+              <h3>What auto-enrol did</h3>
+              <ul class="log">
+                {log.map((l) => (
+                  <li class={`log-${l.outcome}`}>
+                    <time datetime={l.createdAt}>{formatWhen(l.createdAt)}</time>
+                    {l.detail}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      );
+    })
+  }
+
+  {
+    demoable.length > 0 && (
+      <section class="panel demo" aria-labelledby="demo-heading">
+        <h2 id="demo-heading">open a window early</h2>
+        <p>
+          For showing auto-enrol at the crit. This is not part of ISIS: it moves a semester's
+          window opening time to now or to one minute from now. Auto-enrol then runs on the next
+          page load after that time. “Put back” restores the real date and removes what was
+          enrolled in that semester.
+        </p>
+        {nextOpening && (
+          <p>
+            Next real opening: {termLabel(nextOpening)}, {formatWhen(nextOpening.seededOpensAt)}.
+          </p>
+        )}
+        {demoable.map((t) => (
+          <div class="demo-actions">
+            <form method="post" action="/api/demo/window">
+              <input type="hidden" name="term" value={t.id} />
+              <input type="hidden" name="delay" value="0" />
+              <button>Open {termLabel(t)} now</button>
+            </form>
+            <form method="post" action="/api/demo/window">
+              <input type="hidden" name="term" value={t.id} />
+              <input type="hidden" name="delay" value="60" />
+              <button class="secondary">Open it in 1 minute</button>
+            </form>
+            <form method="post" action="/api/demo/reset">
+              <input type="hidden" name="term" value={t.id} />
+              <button class="link-button">Put back</button>
+            </form>
+          </div>
+        ))}
+      </section>
+    )
+  }
+</Base>
+
+<script>
+  // A countdown for a window opening within the next ten minutes, which in
+  // practice means the demo's "in 1 minute". At zero it reloads the page,
+  // and that request is what runs auto-enrol: the server still decides.
+  for (const el of document.querySelectorAll<HTMLElement>("[data-countdown]")) {
+    const at = Date.parse(el.dataset.countdown ?? "");
+    if (!(at - Date.now() < 10 * 60 * 1000)) continue;
+    const original = el.textContent;
+    const tick = () => {
+      const left = Math.ceil((at - Date.now()) / 1000);
+      if (left <= 0) {
+        el.textContent = `${original} (opening now)`;
+        location.reload();
+        return;
+      }
+      el.textContent = `${original} (in ${left}s)`;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
+</script>

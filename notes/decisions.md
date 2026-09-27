@@ -90,3 +90,15 @@ visible", since on a phone it would sit a dozen screens down. Keeping the
 bar and totals at the top and folding only the long list keeps it in view.
 With no JavaScript the list stays open, so nothing becomes unreachable.
 Found by looking at the phone screenshot, which no test would have caught.
+
+## ed71932 feat: course search and manual enrolment
+
+Made enrolment refuse with a reason, the way ISIS does, and put the check in
+one function that auto-enrol will share. The obvious alternative was to let
+manual enrolment through and flag problems like the plan does, but an
+enrolment is a commitment, not a draft, and two separate checks for manual
+and auto-enrol would drift apart. Prerequisites count completed and enrolled
+courses only, not planned ones, because ISIS knows nothing about a plan.
+Checked on the deploy by POSTing an enrolment for Semester 1 2027 before its
+window: it redirected with "Enrolment for Semester 1 2027 opens 30 Nov 2026,
+9:00 am."
