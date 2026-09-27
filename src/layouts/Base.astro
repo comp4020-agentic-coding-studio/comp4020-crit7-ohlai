@@ -1,0 +1,60 @@
+---
+// The frame every page shares: the site nav, the page itself, and the degree
+// progress panel, which is on every page so it is always in view.
+import Progress from "../components/Progress.astro";
+import { loadPlan } from "../lib/view";
+import "../styles.css";
+
+interface Props {
+  title: string;
+  current: "plan" | "courses" | "enrolment" | "readme";
+}
+
+const { title, current } = Astro.props;
+const plan = loadPlan();
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
+const links = [
+  { key: "plan", href: "/", label: "Degree plan" },
+  { key: "courses", href: "/courses/", label: "Courses" },
+  { key: "enrolment", href: "/enrolment/", label: "Enrolment" },
+  { key: "readme", href: "/readme/", label: "About" },
+] as const;
+---
+
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · AACOM planner</title>
+  </head>
+  <body>
+    <header class="site">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">P</span>
+        <span>
+          <strong>AACOM planner</strong>
+          <small>{plan.student.name} · {plan.student.uniId}</small>
+        </span>
+      </a>
+      <nav aria-label="site">
+        {
+          links.map((l) => (
+            <a href={l.href} aria-current={l.key === current ? "page" : undefined}>
+              {l.label}
+            </a>
+          ))
+        }
+      </nav>
+    </header>
+    <div class="shell">
+      <main>
+        {notice && <p class="flash ok" role="status">{notice}</p>}
+        {error && <p class="flash error" role="alert">{error}</p>}
+        <slot />
+      </main>
+      <Progress plan={plan} />
+    </div>
+  </body>
+</html>

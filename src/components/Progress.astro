@@ -1,0 +1,63 @@
+---
+// Degree progress, always in view: units done and to come, then every
+// required course slot as completed, planned, or not yet covered.
+import type { PlanView } from "../lib/view";
+
+interface Props {
+  plan: PlanView;
+}
+
+const { plan } = Astro.props;
+const { units, slots } = plan;
+const pct = (n: number) => `${Math.min(100, (n / units.total) * 100).toFixed(1)}%`;
+const groups = [
+  { key: "completed", title: "Completed", items: slots.filter((s) => s.status === "completed") },
+  { key: "planned", title: "Enrolled or planned", items: slots.filter((s) => s.status === "planned") },
+  { key: "uncovered", title: "Not yet covered", items: slots.filter((s) => s.status === "uncovered") },
+] as const;
+const inPlan = units.completed + units.enrolled + units.planned;
+---
+
+<aside class="progress" aria-labelledby="progress-heading">
+  <h2 id="progress-heading">Degree progress</h2>
+  <p class="progress-degree">Bachelor of Advanced Computing (Honours), {plan.student.specialisation}</p>
+  <div
+    class="bar"
+    role="img"
+    aria-label={`${units.completed} units completed, ${units.enrolled} enrolled, ${units.planned} planned, of ${units.total}`}
+  >
+    <span class="bar-completed" style={`width:${pct(units.completed)}`}></span>
+    <span class="bar-enrolled" style={`width:${pct(units.enrolled)}`}></span>
+    <span class="bar-planned" style={`width:${pct(units.planned)}`}></span>
+  </div>
+  <dl class="units">
+    <div><dt><span class="key key-completed"></span>Completed</dt><dd>{units.completed}</dd></div>
+    <div><dt><span class="key key-enrolled"></span>Enrolled</dt><dd>{units.enrolled}</dd></div>
+    <div><dt><span class="key key-planned"></span>Planned</dt><dd>{units.planned}</dd></div>
+    <div class="units-total"><dt>In the plan</dt><dd>{inPlan} of {units.total}</dd></div>
+  </dl>
+  <details open>
+    <summary>Required courses</summary>
+    {
+      groups.map((g) => (
+        <section class={`slots slots-${g.key}`}>
+          <h3>
+            {g.title} <span class="count">{g.items.length}</span>
+          </h3>
+          {g.items.length === 0 ? (
+            <p class="empty">None</p>
+          ) : (
+            <ul>
+              {g.items.map((s) => (
+                <li>
+                  <span class="slot-label">{s.label}</span>
+                  {s.where && <span class="slot-where">{s.where}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))
+    }
+  </details>
+</aside>

@@ -15,6 +15,13 @@
       "when": 1790550886339,
       "tag": "0001_loving_luke_cage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790551080535,
+      "tag": "0002_rainy_proudstar",
+      "breakpoints": true
     }
   ]
 }

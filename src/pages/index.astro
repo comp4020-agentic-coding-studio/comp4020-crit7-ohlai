@@ -1,53 +1,178 @@
 ---
-import { listMessages } from "../lib/db";
-import "../styles.css";
+// The degree plan: every semester of the degree, the courses in each, and
+// what the plan as a whole is missing.
+import Base from "../layouts/Base.astro";
+import { formatDay, formatWhen, isPlannable, loadPlan, termLabel, termPhase } from "../lib/view";
 
-const messages = listMessages();
+const plan = loadPlan();
+const { terms, entries, courses, catalogue, problems } = plan;
+
+const requirementProblems = problems.filter((p) => p.kind === "requirement");
+const termProblems = problems.filter((p) => p.kind !== "requirement");
+const flagged = (termId: string, code: string) =>
+  termProblems.filter((p) => p.termId === termId && p.message.startsWith(`${code} `));
+
+const years = [...new Set(terms.map((t) => t.year))];
+const statusLabel = { completed: "Completed", enrolled: "Enrolled", planned: "Planned" } as const;
+const phaseLabel = (t: (typeof terms)[number]) => {
+  const phase = termPhase(t);
+  if (phase === "finished") return "Finished";
+  if (phase === "underway") return "Underway";
+  if (phase === "open") return "Enrolment open";
+  if (phase === "upcoming") return `Enrolment opens ${formatWhen(t.enrolmentOpensAt)}`;
+  return "Enrolment closed";
+};
 ---
 
-<!doctype html>
-<html lang="en-AU">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>COMP4020 prototype</title>
-  </head>
-  <body>
-    <nav aria-label="site">
-      <a href="/">Guestbook</a>
-      <a href="/readme/">About</a>
-    </nav>
-    <main>
-      <h1>Guestbook</h1>
-      <p>
-        A minimal full-stack starter: messages live in SQLite on the machine's
-        volume (state survives a reload and a redeploy), and new messages
-        appear in every open tab over a server-sent-events stream — open this
-        page twice and sign it in one. Replace all of this with your own
-        prototype.
-      </p>
-      <form method="post" action="/api/messages">
-        <label for="body">Leave a message</label>
-        <input id="body" name="body" required maxlength="500" />
-        <button>Sign</button>
-      </form>
-      <ul id="messages">
-        {messages.map((message) => <li>{message.body}</li>)}
-      </ul>
-    </main>
-    <script>
-      // The live half of the demo: subscribe to the SSE stream and prepend
-      // messages as they arrive. The form itself needs none of this — its
-      // POST + redirect re-renders the submitting tab from SQLite; this
-      // stream is how every other tab finds out.
-      const list = document.querySelector("#messages");
-      const source = new EventSource("/api/events");
-      source.addEventListener("message", (event) => {
-        const message = JSON.parse(event.data);
-        const item = document.createElement("li");
-        item.textContent = message.body;
-        list?.prepend(item);
-      });
-    </script>
-  </body>
-</html>
+<Base title="Degree plan" current="plan">
+  <h1>Degree plan</h1>
+  <p class="lede">
+    Lay out the degree semester by semester. The plan is checked against the AACOM rules on
+    Programs and Courses every time it changes.
+  </p>
+
+  <section class="check" aria-labelledby="check-heading">
+    <h2 id="check-heading">
+      {problems.length === 0 ? "The plan meets every rule" : "What the plan is missing"}
+    </h2>
+    {
+      problems.length === 0 ? (
+        <p>Every degree rule is met by this plan, and every course is in a semester it runs in, after its prerequisites.</p>
+      ) : (
+        <>
+          {requirementProblems.length > 0 && (
+            <ul class="problems">
+              {requirementProblems.map((p) => (
+                <li>{p.message}</li>
+              ))}
+            </ul>
+          )}
+          {termProblems.length > 0 && (
+            <>
+              <h3>Inside the semesters</h3>
+              <ul class="problems">
+                {termProblems.map((p) => (
+                  <li>
+                    {p.termId ? <a href={`#term-${p.termId}`}>{p.message}</a> : p.message}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </>
+      )
+    }
+    <p class="source">
+      Rules from <a href="https://programsandcourses.anu.edu.au/2026/program/AACOM">AACOM on Programs and Courses</a>.
+    </p>
+  </section>
+
+  {
+    years.map((year) => (
+      <section class="year" aria-label={`${year}`}>
+        <h2 class="year-heading">{year}</h2>
+        <div class="terms">
+          {terms
+            .filter((t) => t.year === year)
+            .map((t) => {
+              const here = entries.filter((e) => e.termId === t.id);
+              const units = here.reduce((s, e) => s + (courses.get(e.code)?.units ?? 0), 0);
+              const phase = termPhase(t);
+              const plannable = isPlannable(t);
+              const options = catalogue.filter((c) => !here.some((e) => e.code === c.code));
+              const runs = options.filter((c) => (t.half === 1 ? c.offeredS1 : c.offeredS2));
+              const doesnt = options.filter((c) => (t.half === 1 ? !c.offeredS1 : !c.offeredS2));
+              return (
+                <article class={`term term-${phase}`} id={`term-${t.id}`} data-term={t.id}>
+                  <header>
+                    <h3>{termLabel(t)}</h3>
+                    <p class="term-meta">
+                      <span class={`phase phase-${phase}`}>{phaseLabel(t)}</span>
+                      <span class={units > 24 ? "load over" : "load"}>{units} / 24 units</span>
+                    </p>
+                  </header>
+                  {here.length === 0 ? (
+                    <p class="empty">Nothing planned yet.</p>
+                  ) : (
+                    <ul class="entries">
+                      {here.map((e) => {
+                        const course = courses.get(e.code);
+                        const issues = flagged(t.id, e.code);
+                        return (
+                          <li class={`entry entry-${e.status}${issues.length ? " entry-flagged" : ""}`} data-course={e.code}>
+                            <div class="entry-main">
+                              <a class="code" href={`/courses/?q=${e.code}`}>{e.code}</a>
+                              <span class="title">{course?.title ?? "Unknown course"}</span>
+                            </div>
+                            <div class="entry-side">
+                              <span class={`badge badge-${e.status}`}>{statusLabel[e.status]}</span>
+                              <span class="units-small">{course?.units}u</span>
+                              {e.status === "planned" && plannable && (
+                                <form method="post" action="/api/plan/remove">
+                                  <input type="hidden" name="term" value={t.id} />
+                                  <input type="hidden" name="course" value={e.code} />
+                                  <input type="hidden" name="back" value={`/#term-${t.id}`} />
+                                  <button class="link-button" aria-label={`Remove ${e.code} from ${termLabel(t)}`}>
+                                    Remove
+                                  </button>
+                                </form>
+                              )}
+                            </div>
+                            {issues.length > 0 && (
+                              <ul class="entry-issues">
+                                {issues.map((p) => (
+                                  <li>{p.message}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {termProblems
+                    .filter((p) => p.termId === t.id && p.kind === "load")
+                    .map((p) => (
+                      <p class="term-issue">{p.message}</p>
+                    ))}
+                  {plannable ? (
+                    <form class="add" method="post" action="/api/plan">
+                      <input type="hidden" name="term" value={t.id} />
+                      <input type="hidden" name="back" value={`/#term-${t.id}`} />
+                      <label for={`add-${t.id}`}>Add a course</label>
+                      <div class="add-row">
+                        <select id={`add-${t.id}`} name="course" required>
+                          <option value="">Choose a course</option>
+                          <optgroup label={`Runs in Semester ${t.half}`}>
+                            {runs.map((c) => (
+                              <option value={c.code}>
+                                {c.code} {c.title} ({c.units}u)
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label={`Does not run in Semester ${t.half}`}>
+                            {doesnt.map((c) => (
+                              <option value={c.code}>
+                                {c.code} {c.title} ({c.units}u)
+                              </option>
+                            ))}
+                          </optgroup>
+                        </select>
+                        <button>Add</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p class="term-foot">
+                      {phase === "finished"
+                        ? `Finished ${formatDay(t.endsOn)}. From your enrolment record.`
+                        : `Started ${formatDay(t.startsOn)}. This is your current enrolment.`}
+                    </p>
+                  )}
+                </article>
+              );
+            })}
+        </div>
+      </section>
+    ))
+  }
+</Base>

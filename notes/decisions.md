@@ -51,3 +51,19 @@ assertion to the semester without saying how the page is built. The courses
 used run in the semester they are placed in, so the tests do not depend on
 whether the planner accepts impossible entries. Not run: the suite needs the
 built server, which needs better-sqlite3.
+
+## 33f9dae feat: schema, migration and seed for the AACOM planner
+
+Modelled the degree rules as ordered JSON rules in a `requirements` table,
+where a rule that names courses claims them. The obvious alternative was a
+flat list of required course codes plus a unit total, which is how most
+planners fake it, but AACOM's rules are not flat: three "one of" pairs, a
+specialisation with a 4000-level minimum inside it, a capstone with three
+alternative routes, and an elective pool that must not double count courses
+already used. A flat list would have meant inventing a simpler degree, and
+the brief says not to invent rules. Checked by running the check on the
+seeded plan in a scratch vitest run and reading every line of its output
+against the P&C page. That run caught a bug: a half-done capstone option
+kept its claims, so COMP4500 counted as its own "further 4000-level" course.
+Fixed before the commit. Deployed, and the boot logs show migration 0001
+and the seed ran.

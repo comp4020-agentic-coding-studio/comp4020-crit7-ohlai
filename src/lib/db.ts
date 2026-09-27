@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { CourseInfo, Entry, Prereq, RequirementInfo, Rule, TermInfo } from "./rules";
@@ -9,8 +9,6 @@ import {
   type Course,
   courses,
   enrolments,
-  type Message,
-  messages,
   planEntries,
   requirements,
   students,
@@ -217,17 +215,4 @@ export function removePlanEntry(termId: string, code: string, studentId = STUDEN
       ),
     )
     .run();
-}
-
-// ---------------------------------------------------------------------------
-// The starter's guestbook, until the plan page replaces it
-
-export type { Message };
-
-export function listMessages(): Message[] {
-  return db.select().from(messages).orderBy(desc(messages.id)).limit(50).all();
-}
-
-export function addMessage(body: string): Message {
-  return db.insert(messages).values({ body }).returning().get();
 }

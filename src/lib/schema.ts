@@ -13,16 +13,6 @@ const createdAt = () =>
     .notNull()
     .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`);
 
-export const messages = sqliteTable("messages", {
-  id: int().primaryKey({ autoIncrement: true }),
-  body: text().notNull(),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
-});
-
-export type Message = typeof messages.$inferSelect;
-
 // One row, hardcoded. There is no login: this app is my own planner.
 export const students = sqliteTable("students", {
   id: int().primaryKey(),
