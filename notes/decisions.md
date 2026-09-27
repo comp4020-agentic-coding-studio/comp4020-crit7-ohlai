@@ -80,3 +80,13 @@ scratch global setup that points `baseUrl` at fly.dev: 27 of 27 passed,
 including both plan contracts, the invariants and the README check. The
 persistence test's leftover entry was removed afterwards. Then screenshots at
 both viewports, which showed the phone problem fixed in the next commit.
+
+## 1faf1d5 fix: on a phone, start the required-courses list closed
+
+Closed the required-courses list by default below 60rem with a three-line
+script. The obvious alternative was to move the progress panel below the
+plan on a phone, which fixes the scroll but breaks the brief's "always
+visible", since on a phone it would sit a dozen screens down. Keeping the
+bar and totals at the top and folding only the long list keeps it in view.
+With no JavaScript the list stays open, so nothing becomes unreachable.
+Found by looking at the phone screenshot, which no test would have caught.

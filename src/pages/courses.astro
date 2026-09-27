@@ -1,0 +1,143 @@
+---
+// Course search and manual enrolment. The search is a GET form, so it works
+// with no JavaScript; the script at the bottom only makes it live.
+import Base from "../layouts/Base.astro";
+import { openTerms } from "../lib/enrol";
+import { isPlannable, loadPlan, termLabel } from "../lib/view";
+import { formatWhen } from "../lib/view";
+
+const plan = loadPlan();
+const { catalogue, entries, terms } = plan;
+const q = (Astro.url.searchParams.get("q") ?? "").trim();
+const needle = q.toLowerCase();
+const results = needle
+  ? catalogue.filter(
+      (c) => c.code.toLowerCase().includes(needle) || c.title.toLowerCase().includes(needle),
+    )
+  : catalogue;
+
+const open = openTerms();
+const future = terms.filter((t) => isPlannable(t));
+const nextWindow = terms
+  .filter((t) => t.enrolmentOpensAt > new Date().toISOString())
+  .sort((a, b) => a.enrolmentOpensAt.localeCompare(b.enrolmentOpensAt))[0];
+const labelOf = new Map(terms.map((t) => [t.id, termLabel(t)]));
+const back = `/courses/${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+
+const runs = (c: (typeof catalogue)[number]) =>
+  [c.offeredS1 && "Semester 1", c.offeredS2 && "Semester 2"].filter(Boolean).join(" and ");
+const mineFor = (code: string) => entries.filter((e) => e.code === code);
+const statusWord = { completed: "Completed", enrolled: "Enrolled", planned: "Planned" } as const;
+---
+
+<Base title="Courses" current="courses">
+  <h1>Courses</h1>
+  <p class="lede">
+    Search the catalogue by code or title, then enrol in a course for a semester whose enrolment
+    window is open, or put it in your plan.
+  </p>
+
+  <form class="search" method="get" action="/courses/" role="search">
+    <label for="q">Search courses</label>
+    <input id="q" name="q" type="search" value={q} placeholder="COMP3600 or machine learning" autocomplete="off" />
+    <button>Search</button>
+  </form>
+
+  <p class="panel window-note">
+    {
+      open.length > 0 ? (
+        <>Enrolment is open for {open.map((t) => termLabel(t)).join(" and ")}.</>
+      ) : (
+        <>
+          No enrolment window is open right now.
+          {nextWindow && <> {termLabel(nextWindow)} opens {formatWhen(nextWindow.enrolmentOpensAt)}.</>}{" "}
+          <a href="/enrolment/">Enrolment windows</a>
+        </>
+      )
+    }
+  </p>
+
+  <div id="results" aria-live="polite">
+    <p class="result-count">
+      {results.length} {results.length === 1 ? "course" : "courses"}{q && <> matching “{q}”</>}
+    </p>
+    <ul class="results">
+      {
+        results.map((c) => {
+          const mine = mineFor(c.code);
+          const plannableHere = future.filter((t) => !mine.some((e) => e.termId === t.id));
+          return (
+            <li class="course" data-course-result={c.code}>
+              <h2>
+                {c.code} {c.title}
+              </h2>
+              <p class="course-meta">
+                <span>{c.units} units</span>
+                <span>Runs in {runs(c)}</span>
+                <a href={c.sourceUrl}>Programs and Courses</a>
+              </p>
+              <p class="course-req">
+                {c.prereqText ? <>Requisites: {c.prereqText}</> : "No prerequisites."}
+              </p>
+              {mine.length > 0 && (
+                <p class="course-status">
+                  {mine.map((e) => `${statusWord[e.status]}, ${labelOf.get(e.termId)}`).join(". ")}.
+                </p>
+              )}
+              <div class="course-actions">
+                {open.length > 0 && (
+                  <form method="post" action="/api/enrol">
+                    <input type="hidden" name="course" value={c.code} />
+                    <input type="hidden" name="back" value={back} />
+                    <label for={`enrol-${c.code}`}>Enrol for</label>
+                    <select id={`enrol-${c.code}`} name="term">
+                      {open.map((t) => (
+                        <option value={t.id}>{termLabel(t)}</option>
+                      ))}
+                    </select>
+                    <button>Enrol</button>
+                  </form>
+                )}
+                {plannableHere.length > 0 && (
+                  <form method="post" action="/api/plan">
+                    <input type="hidden" name="course" value={c.code} />
+                    <input type="hidden" name="back" value={back} />
+                    <label for={`plan-${c.code}`}>Plan for</label>
+                    <select id={`plan-${c.code}`} name="term">
+                      {plannableHere.map((t) => (
+                        <option value={t.id}>{termLabel(t)}</option>
+                      ))}
+                    </select>
+                    <button class="secondary">Add to plan</button>
+                  </form>
+                )}
+              </div>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</Base>
+
+<script>
+  // Live search: as you type, fetch this same page for the new query and
+  // swap in its results. The server renders them either way.
+  const input = document.querySelector<HTMLInputElement>("#q");
+  const results = document.querySelector("#results");
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let latest = 0;
+  input?.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const q = input.value.trim();
+      const url = `/courses/${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+      const request = ++latest;
+      const html = await (await fetch(url)).text();
+      if (request !== latest || !results) return;
+      const next = new DOMParser().parseFromString(html, "text/html").querySelector("#results");
+      if (next) results.innerHTML = next.innerHTML;
+      history.replaceState(null, "", url);
+    }, 200);
+  });
+</script>
