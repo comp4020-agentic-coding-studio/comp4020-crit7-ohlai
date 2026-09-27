@@ -28,3 +28,13 @@ was not chosen yet, and a guessed contract would have to be rewritten or,
 worse, quietly bent to fit. Checked by reading the spec file against the five
 published lines: three are machine-checkable and two are named at the bottom
 as the crit's to judge. Not run, because better-sqlite3 cannot build here.
+
+## b8d7c8f docs: choose the system, ISIS enrolment joined to Programs and Courses
+
+Wrote the system, the slice and the slice's own rules into CLAUDE.md, after
+deploying the untouched starter so the live URL check could go green first.
+The obvious alternative was to write only the one-line choice and let the
+rules emerge in code, but the no-timer rule for auto-enrol and the grounding
+rule for degree data are exactly the kind an agent breaks by reflex (a
+`setInterval` is the first thing it reaches for), so they are cheaper to state
+up front. Checked the deploy with a curl of the live URL, which returned 200.
