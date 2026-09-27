@@ -12,11 +12,42 @@ behind it. The cutoff is Monday 28 September, 12:00.
 
 ## What this is
 
-Not decided yet. The brief says to pick an ANU system I actually deal with,
-model one slice of it, and wire that slice end to end.
+A replacement for ANU enrolment (ISIS) joined to Programs and Courses, for one
+degree: the **Bachelor of Advanced Computing (Honours)**, AACOM. Today those are
+two systems. Programs and Courses holds the rules and ISIS holds the
+enrolments, and checking one against the other is my job. Here they are one app.
 
-Until the system and the slice are written down in this section, there is no
-brief for the work. Do not pick one. Stop and ask.
+The slice, in order of importance:
+
+1. **The degree plan.** I lay out my degree semester by semester and choose
+   the courses for each. The plan is checked against AACOM's requirements and
+   says what is missing: a required course not in the plan, a unit count
+   short, a prerequisite placed after the course that needs it.
+2. **Degree progress**, a panel that is always visible: required courses
+   completed, planned, and not yet covered.
+3. **Manual enrolment.** Search courses by code or title and enrol in one for
+   a semester.
+4. **Auto-enrol.** Per semester, "enrol me from my plan". When that
+   semester's enrolment window opens, the planned courses are enrolled.
+
+Single user, no login: one hardcoded student record.
+
+### Rules for this slice
+
+- **The degree data is grounded, not invented.** Requirements, courses, units,
+  offerings and prerequisites come from programsandcourses.anu.edu.au (2026
+  handbook). Every source URL and every simplification is recorded in
+  `notes/degree-source.md`. A rule that is not on a P&C page does not go in
+  the seed. If a simplification changes, that file changes in the same commit.
+- **No background timers.** The machine stops when idle, so `setInterval` and
+  cron never fire. Each semester's `enrolment_opens_at` lives in the
+  database, and any window that has opened is processed on the next request.
+  Processing is idempotent: it never enrols the same course twice.
+- **The demo control is labelled as a demo.** It opens a window now (or in a
+  minute) so auto-enrol can be shown live. It must never pass for a real
+  ISIS feature.
+- **Server-rendered pages and forms that POST.** Client JavaScript only where
+  it earns its place, such as live search, and the page works without it.
 
 ## Hard constraints
 

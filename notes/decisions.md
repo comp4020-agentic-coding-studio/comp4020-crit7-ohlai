@@ -18,3 +18,13 @@ starter that the facts I kept still apply: spec/routes.ts, the jsdom axe pass,
 the missing `app` line in fly.toml, and migrations running at boot are all in
 the files they describe. The base path rule went in inverted on purpose, since
 the static weeks trained the opposite habit.
+
+## f72f6d2 test: crit 7's spec, as far as a machine can hold it
+
+Wrote the live fly.dev check and left the wiring and persistence contracts as
+`it.todo`. The obvious alternative was to guess a flow and write those two
+tests against it, but the flow they assert is the flow through a slice that
+was not chosen yet, and a guessed contract would have to be rewritten or,
+worse, quietly bent to fit. Checked by reading the spec file against the five
+published lines: three are machine-checkable and two are named at the bottom
+as the crit's to judge. Not run, because better-sqlite3 cannot build here.
