@@ -124,3 +124,14 @@ fail is noise on a page whose job is to make the next action obvious. Found
 by reading the step 7 screenshot as a stranger would, not by a test.
 Deployed, then checked that prod was back to its seeded state after the
 live test runs and the demo run.
+
+## 1a863d8 chore: live spec runs, harness facts, and the reflection skeleton
+
+Taught `spec/global-setup.ts` to take `SPEC_BASE_URL` and skip booting the
+server. The obvious alternative was to keep the scratch vitest config I had
+been using outside the repo, but then the only way `spec/` ever ran on this
+machine would be a trick nobody could see or repeat. The cost is that a live
+run writes to the real database, so the persistence test now cleans up after
+itself and CLAUDE.md says any new flow test must too. Checked with the real
+vitest config against fly.dev (64 of 64), then read prod back: the seeded
+plan with nothing enrolled for 2027 and auto-enrol off.
