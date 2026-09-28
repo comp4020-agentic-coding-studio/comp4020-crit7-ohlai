@@ -13,12 +13,14 @@ The first correction came before any code. I had Claude draft the prompt for
 the build session, and the draft told that session to cut features if time ran
 short. I pushed back:
 
-> i will descide if a feature and scoope compete. Do not second guess me if
+> i will decide if a feature and scope compete. Do not second guess me if
 > you dont think there is enough time
 
-The final prompt keeps the cutoff as a fact and leaves scope to me. An agent
-quietly trimming features would never fail a test. It would just ship a
-smaller app.
+The final prompt keeps the cutoff as a fact and leaves scope to me. In the past 
+I have experienced Claude repeatedly stopping and changing the scope without my 
+knowledge because it believes the due date / time is approaching, which is frustrating 
+bc an agent quietly trimming features would never fail a test. It would just ship a
+smaller app. 
 
 The starter went live first. Then the system went into `CLAUDE.md`
 ([`b8d7c8f`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-ohlai/commit/b8d7c8f))
