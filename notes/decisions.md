@@ -145,3 +145,11 @@ like and what was chosen not to build, and a tour answers neither. Checked
 with the README spec test against the deploy, which timed out once on a cold
 start and passed on the rerun, and by reading the rendered page in a
 screenshot.
+
+## a7e247e docs: the process overview
+
+Folded my raw scope note into the overview and cut to 269 words, citing seven
+commits. The obvious alternative was to keep the notes section and add a
+separate account under it, but the template wants one account for a reader,
+and the notes were always meant as raw material for it. Checked with
+`pnpm check:evidence`, which found every citation resolves.
