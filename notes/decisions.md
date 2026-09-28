@@ -135,3 +135,13 @@ run writes to the real database, so the persistence test now cleans up after
 itself and CLAUDE.md says any new flow test must too. Checked with the real
 vitest config against fly.dev (64 of 64), then read prod back: the seeded
 plan with nothing enrolled for 2027 and auto-enrol off.
+
+## dbfbea3 docs: the README, served at /readme/ as the About page
+
+Wrote the README around one claim, that good means the plan can be trusted,
+and hung the two main decisions and the list of what was left out on it. The
+obvious alternative was a feature tour, but the template asks what good looks
+like and what was chosen not to build, and a tour answers neither. Checked
+with the README spec test against the deploy, which timed out once on a cold
+start and passed on the rerun, and by reading the rendered page in a
+screenshot.
